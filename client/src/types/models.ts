@@ -40,6 +40,10 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface ProjectWithTaskCount extends Project {
+  taskCount: number;
+}
+
 export interface Task {
   _id: string;
   organizationId: string;
