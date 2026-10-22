@@ -4,14 +4,19 @@ import { PageHeader } from "../components/PageHeader";
 import { StatusPanel } from "../components/StatusPanel";
 import { projectService } from "../services/projectService";
 import { taskService } from "../services/taskService";
-import type { ProjectWithTaskCount } from "../types/models";
+import type { Project, ProjectCreatePayload, Task } from "../types/models";
+import type { ProjectWithTaskCount } from "../types/views";
 import { useAuth } from "../hooks/useAuth";
 import { canDeleteResources } from "../utils/permissions";
 
 export const ProjectsPage = () => {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<ProjectWithTaskCount[]>([]);
-  const [formState, setFormState] = useState({ name: "", description: "" });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [formState, setFormState] = useState<ProjectCreatePayload>({
+    name: "",
+    description: "",
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,17 +26,13 @@ export const ProjectsPage = () => {
     setError(null);
 
     try {
-      const [nextProjects, tasks] = await Promise.all([
+      const [nextProjects, nextTasks] = await Promise.all([
         projectService.list(),
         taskService.list(),
       ]);
 
-      setProjects(
-        nextProjects.map((project) => ({
-          ...project,
-          taskCount: tasks.filter((task) => task.projectId === project._id).length,
-        })),
-      );
+      setProjects(nextProjects);
+      setTasks(nextTasks);
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Unable to load projects",
@@ -52,7 +53,7 @@ export const ProjectsPage = () => {
 
     try {
       const project = await projectService.create(formState);
-      setProjects((current) => [{ ...project, taskCount: 0 }, ...current]);
+      setProjects((current) => [project, ...current]);
       setFormState({ name: "", description: "" });
     } catch (submitError) {
       setError(
@@ -79,6 +80,13 @@ export const ProjectsPage = () => {
       );
     }
   };
+
+  const projectsWithTaskCounts: ProjectWithTaskCount[] = projects.map(
+    (project) => ({
+      ...project,
+      taskCount: tasks.filter((task) => task.projectId === project._id).length,
+    }),
+  );
 
   if (loading) {
     return (
@@ -131,9 +139,9 @@ export const ProjectsPage = () => {
             </button>
           </div>
         </form>
-        {projects.length ? (
+        {projectsWithTaskCounts.length ? (
           <ul className="space-y-4">
-            {projects.map((project) => (
+            {projectsWithTaskCounts.map((project) => (
               <li key={project._id}>
                 <article className="rounded-3xl bg-white p-6 shadow-sm">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -145,7 +153,8 @@ export const ProjectsPage = () => {
                         {project.description}
                       </p>
                       <p className="mt-2 text-sm text-slate-500">
-                        {project.taskCount} {project.taskCount === 1 ? "task" : "tasks"}
+                        {project.taskCount}{" "}
+                        {project.taskCount === 1 ? "task" : "tasks"}
                       </p>
                     </div>
                     <div className="flex gap-2">
