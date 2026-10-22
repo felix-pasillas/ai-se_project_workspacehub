@@ -1,5 +1,6 @@
 import type { Project, Task } from "./models";
 import type { ProjectWithTaskCount } from "./views";
+import { buildProjectWithTaskCount } from "../utils/projectMetrics";
 
 export const exampleProject: Project = {
   _id: "6650a1f2c3d4e5f6a7b8c9a1",
@@ -27,9 +28,5 @@ export const exampleTask: Task = {
 
 const exampleTasks: Task[] = [exampleTask];
 
-export const exampleProjectWithTaskCount: ProjectWithTaskCount = {
-  ...exampleProject,
-  taskCount: exampleTasks.filter(
-    (task) => task.projectId === exampleProject._id,
-  ).length,
-};
+export const exampleProjectWithTaskCount: ProjectWithTaskCount =
+  buildProjectWithTaskCount(exampleProject, exampleTasks);

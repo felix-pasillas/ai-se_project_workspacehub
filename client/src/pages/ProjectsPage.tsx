@@ -5,7 +5,7 @@ import { StatusPanel } from "../components/StatusPanel";
 import { projectService } from "../services/projectService";
 import { taskService } from "../services/taskService";
 import type { Project, ProjectCreatePayload, Task } from "../types/models";
-import type { ProjectWithTaskCount } from "../types/views";
+import { buildProjectWithTaskCount } from "../utils/projectMetrics";
 import { useAuth } from "../hooks/useAuth";
 import { canDeleteResources } from "../utils/permissions";
 
@@ -81,11 +81,8 @@ export const ProjectsPage = () => {
     }
   };
 
-  const projectsWithTaskCounts: ProjectWithTaskCount[] = projects.map(
-    (project) => ({
-      ...project,
-      taskCount: tasks.filter((task) => task.projectId === project._id).length,
-    }),
+  const projectsWithTaskCounts = projects.map((project) =>
+    buildProjectWithTaskCount(project, tasks),
   );
 
   if (loading) {
