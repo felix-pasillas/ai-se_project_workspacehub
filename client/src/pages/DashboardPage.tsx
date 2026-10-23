@@ -172,6 +172,27 @@ export const DashboardPage = () => {
         </div>
         <div className="space-y-6">
           <div className="rounded-[20px] bg-white p-8 shadow-sm">
+            <h2 className="text-xl font-bold text-ink">Members</h2>
+            <ul className="mt-4 space-y-3">
+              {data.users.slice(0, 4).map((member) => (
+                <li
+                  className="flex items-center justify-between gap-4 rounded-[12px] border border-slate-200 p-[18px]"
+                  key={member._id}
+                >
+                  <div>
+                    <p className="font-semibold text-ink">
+                      {member.firstName} {member.lastName}
+                    </p>
+                    <p className="text-[13px] text-slate-500">{member.email}</p>
+                  </div>
+                  <span className="text-sm capitalize text-slate-500">
+                    {member.role}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-[20px] bg-white p-8 shadow-sm">
             <h2 className="text-xl font-bold text-ink">Feature flags</h2>
             <ul className="mt-4 space-y-3">
               {Object.entries(organization?.featureFlags ?? {}).map(
