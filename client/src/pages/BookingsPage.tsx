@@ -21,6 +21,39 @@ const buildBookingFormState = (booking: Booking): BookingFormState => ({
   endsAt: formatDateTimeInput(booking.endsAt),
 });
 
+const MIN_TITLE_LENGTH = 3;
+
+const validateBookingFormState = (
+  formState: BookingFormState,
+): string | null => {
+  const title = formState.title.trim();
+
+  if (!title) {
+    return "Title is required.";
+  }
+
+  if (title.length < MIN_TITLE_LENGTH) {
+    return `Title must be at least ${MIN_TITLE_LENGTH} characters.`;
+  }
+
+  if (!formState.startsAt || !formState.endsAt) {
+    return "Start and end times are required.";
+  }
+
+  const startsAt = new Date(formState.startsAt).getTime();
+  const endsAt = new Date(formState.endsAt).getTime();
+
+  if (Number.isNaN(startsAt) || Number.isNaN(endsAt)) {
+    return "Start and end times must be valid dates.";
+  }
+
+  if (endsAt <= startsAt) {
+    return "End time must be after the start time.";
+  }
+
+  return null;
+};
+
 export const BookingsPage = () => {
   const { isFeatureEnabled, user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -77,6 +110,13 @@ export const BookingsPage = () => {
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const validationError = validateBookingFormState(createState);
+
+    if (validationError) {
+      setCreateError(validationError);
+      return;
+    }
+
     try {
       const booking = await bookingService.create(createState);
       setBookings((current) =>
@@ -119,6 +159,16 @@ export const BookingsPage = () => {
   };
 
   const handleSave = async (bookingId: string) => {
+    const validationError = validateBookingFormState(bookingEdits[bookingId]);
+
+    if (validationError) {
+      setBookingErrors((current) => ({
+        ...current,
+        [bookingId]: validationError,
+      }));
+      return;
+    }
+
     try {
       const updatedBooking = await bookingService.update(
         bookingId,
