@@ -117,6 +117,8 @@ export const BookingsPage = () => {
       return;
     }
 
+    setCreateError(null);
+
     try {
       const booking = await bookingService.create(createState);
       setBookings((current) =>
@@ -168,6 +170,8 @@ export const BookingsPage = () => {
       }));
       return;
     }
+
+    setBookingErrors((current) => ({ ...current, [bookingId]: "" }));
 
     try {
       const updatedBooking = await bookingService.update(
