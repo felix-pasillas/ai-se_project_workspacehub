@@ -4,15 +4,13 @@ import { StatusPanel } from "../components/StatusPanel";
 import { useAuth } from "../hooks/useAuth";
 import { bookingService } from "../services/bookingService";
 import type { Booking } from "../types/models";
+import {
+  validateBookingFormState,
+  type BookingFormErrors,
+  type BookingFormState,
+} from "../utils/bookingValidation";
 import { formatDateTimeInput } from "../utils/date";
 import { canDeleteResources, canEditBooking } from "../utils/permissions";
-
-interface BookingFormState {
-  title: string;
-  description: string;
-  startsAt: string;
-  endsAt: string;
-}
 
 const buildBookingFormState = (booking: Booking): BookingFormState => ({
   title: booking.title,
@@ -20,8 +18,6 @@ const buildBookingFormState = (booking: Booking): BookingFormState => ({
   startsAt: formatDateTimeInput(booking.startsAt),
   endsAt: formatDateTimeInput(booking.endsAt),
 });
-
-type BookingFormErrors = Partial<Record<keyof BookingFormState, string>>;
 
 type BookingFormTouched = Partial<Record<keyof BookingFormState, boolean>>;
 
@@ -32,43 +28,7 @@ const ALL_FIELDS_TOUCHED: BookingFormTouched = {
   endsAt: true,
 };
 
-const MIN_TITLE_LENGTH = 3;
-
-const validateBookingFormState = (
-  formState: BookingFormState,
-): BookingFormErrors => {
-  const errors: BookingFormErrors = {};
-  const title = formState.title.trim();
-  const startsAt = new Date(formState.startsAt).getTime();
-  const endsAt = new Date(formState.endsAt).getTime();
-
-  if (!title) {
-    errors.title = "Title is required.";
-  } else if (title.length < MIN_TITLE_LENGTH) {
-    errors.title = `Title must be at least ${MIN_TITLE_LENGTH} characters.`;
-  }
-
-  if (!formState.startsAt) {
-    errors.startsAt = "Start time is required.";
-  } else if (Number.isNaN(startsAt)) {
-    errors.startsAt = "Start time must be a valid date.";
-  }
-
-  if (!formState.endsAt) {
-    errors.endsAt = "End time is required.";
-  } else if (Number.isNaN(endsAt)) {
-    errors.endsAt = "End time must be a valid date.";
-  }
-
-  if (!errors.startsAt && !errors.endsAt && endsAt <= startsAt) {
-    errors.endsAt = "End time must be after the start time.";
-  }
-
-  return errors;
-};
-
 const hasErrors = (errors: BookingFormErrors) => Object.keys(errors).length > 0;
-
 export const BookingsPage = () => {
   const { isFeatureEnabled, user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
