@@ -105,13 +105,12 @@ export const BookingsPage = () => {
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setCreateError(null);
 
     if (hasErrors(validateBookingFormState(createState))) {
       setCreateTouched(ALL_FIELDS_TOUCHED);
       return;
     }
-
-    setCreateError(null);
 
     try {
       const booking = await bookingService.create(createState);
@@ -156,6 +155,8 @@ export const BookingsPage = () => {
   };
 
   const handleSave = async (bookingId: string) => {
+    setBookingErrors((current) => ({ ...current, [bookingId]: "" }));
+
     if (hasErrors(validateBookingFormState(bookingEdits[bookingId]))) {
       setEditTouched((current) => ({
         ...current,
@@ -163,8 +164,6 @@ export const BookingsPage = () => {
       }));
       return;
     }
-
-    setBookingErrors((current) => ({ ...current, [bookingId]: "" }));
 
     try {
       const updatedBooking = await bookingService.update(
