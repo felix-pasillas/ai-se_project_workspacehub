@@ -4,15 +4,15 @@ import { PageHeader } from "../components/PageHeader";
 import { StatusPanel } from "../components/StatusPanel";
 import { projectService } from "../services/projectService";
 import { taskService } from "../services/taskService";
-import type { Project, ProjectCreatePayload, Task } from "../types/models";
+import type { ProjectCreatePayload } from "../types/models";
+import type { ProjectWithTaskCount } from "../types/views";
 import { buildProjectWithTaskCount } from "../utils/projectMetrics";
 import { useAuth } from "../hooks/useAuth";
 import { canCreateProject, canDeleteResources } from "../utils/permissions";
 
 export const ProjectsPage = () => {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<ProjectWithTaskCount[]>([]);
   const [formState, setFormState] = useState<ProjectCreatePayload>({
     name: "",
     description: "",
@@ -32,8 +32,11 @@ export const ProjectsPage = () => {
         taskService.list(),
       ]);
 
-      setProjects(nextProjects);
-      setTasks(nextTasks);
+      setProjects(
+        nextProjects.map((project) =>
+          buildProjectWithTaskCount(project, nextTasks),
+        ),
+      );
     } catch (error) {
       setLoadError(
         error instanceof Error ? error.message : "Unable to load projects",
@@ -54,7 +57,10 @@ export const ProjectsPage = () => {
 
     try {
       const project = await projectService.create(formState);
-      setProjects((current) => [project, ...current]);
+      setProjects((current) => [
+        buildProjectWithTaskCount(project, []),
+        ...current,
+      ]);
       setFormState({ name: "", description: "" });
     } catch (submitError) {
       setActionError(
@@ -83,10 +89,6 @@ export const ProjectsPage = () => {
       );
     }
   };
-
-  const projectsWithTaskCounts = projects.map((project) =>
-    buildProjectWithTaskCount(project, tasks),
-  );
 
   if (loading) {
     return (
@@ -152,9 +154,9 @@ export const ProjectsPage = () => {
             message="Only owners and admins can create new projects from this page."
           />
         )}
-        {projectsWithTaskCounts.length ? (
+        {projects.length ? (
           <ul className="space-y-4">
-            {projectsWithTaskCounts.map((project) => (
+            {projects.map((project) => (
               <li key={project._id}>
                 <article className="rounded-3xl bg-white p-6 shadow-sm">
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
