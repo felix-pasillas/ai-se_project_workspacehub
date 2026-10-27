@@ -134,7 +134,9 @@ export const ProjectsPage = () => {
                 placeholder="Description"
                 value={formState.description}
               />
-              {actionError ? <p className="text-sm text-danger">{actionError}</p> : null}
+              {actionError ? (
+                <p className="text-sm text-danger">{actionError}</p>
+              ) : null}
               <button
                 className="rounded-[12px] bg-ink px-4 py-3 font-medium text-white transition hover:opacity-80 active:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={saving}

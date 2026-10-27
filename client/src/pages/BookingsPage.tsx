@@ -67,8 +67,7 @@ const validateBookingFormState = (
   return errors;
 };
 
-const hasErrors = (errors: BookingFormErrors) =>
-  Object.keys(errors).length > 0;
+const hasErrors = (errors: BookingFormErrors) => Object.keys(errors).length > 0;
 
 export const BookingsPage = () => {
   const { isFeatureEnabled, user } = useAuth();
@@ -439,7 +438,11 @@ export const BookingsPage = () => {
                           disabled={!canEdit}
                           onBlur={() => markEditTouched(booking._id, "endsAt")}
                           onChange={(event) =>
-                            handleEdit(booking._id, "endsAt", event.target.value)
+                            handleEdit(
+                              booking._id,
+                              "endsAt",
+                              event.target.value,
+                            )
                           }
                           type="datetime-local"
                           value={
