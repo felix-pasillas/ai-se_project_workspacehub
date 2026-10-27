@@ -21,6 +21,15 @@ export default tseslint.config(
         tsconfigRootDir,
       },
     },
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
+    },
   },
   {
     files: ["client/src/**/*.{ts,tsx}"],
