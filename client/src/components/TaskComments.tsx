@@ -5,9 +5,14 @@ import type { Comment, User } from "../types/models";
 interface TaskCommentsProps {
   taskId: string;
   users: User[];
+  commentCount: number;
 }
 
-export const TaskComments = ({ taskId, users }: TaskCommentsProps) => {
+export const TaskComments = ({
+  taskId,
+  users,
+  commentCount,
+}: TaskCommentsProps) => {
   const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [content, setContent] = useState("");
@@ -68,7 +73,7 @@ export const TaskComments = ({ taskId, users }: TaskCommentsProps) => {
         onClick={() => setIsExpanded((current) => !current)}
         type="button"
       >
-        {isExpanded ? "Hide Comments" : `Show Comments (${comments.length})`}
+        {isExpanded ? "Hide Comments" : `Show Comments (${commentCount})`}
       </button>
       {isExpanded ? (
         <div className="mt-4 basis-full space-y-4 rounded-2xl border border-slate-200 p-4">

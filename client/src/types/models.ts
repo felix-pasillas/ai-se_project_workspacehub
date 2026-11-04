@@ -44,6 +44,10 @@ export type ProjectCreatePayload = Pick<Project, "name" | "description">;
 
 export type ProjectUpdatePayload = Partial<ProjectCreatePayload>;
 
+export interface TaskWithCommentCount extends Task {
+  commentCount: number;
+}
+
 export interface Task {
   _id: string;
   organizationId: string;
