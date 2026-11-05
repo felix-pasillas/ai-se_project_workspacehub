@@ -56,9 +56,7 @@ export const updateComment = async (
     );
   }
 
-  if (payload.content !== undefined) {
-    comment.content = requireString(payload.content, "Content");
-  }
+  comment.content = requireString(payload.content, "Content");
 
   await comment.save();
   return comment;
