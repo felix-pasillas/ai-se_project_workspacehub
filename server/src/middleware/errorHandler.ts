@@ -3,6 +3,14 @@ import mongoose from "mongoose";
 import { AppError } from "../utils/appError";
 import { sendError } from "../utils/apiResponse";
 
+const isMalformedJsonError = (error: unknown): boolean => {
+  return (
+    error instanceof SyntaxError &&
+    "type" in error &&
+    error.type === "entity.parse.failed"
+  );
+};
+
 export const errorHandler = (
   error: unknown,
   _req: Request,
@@ -11,6 +19,10 @@ export const errorHandler = (
 ) => {
   if (error instanceof AppError) {
     return sendError(res, error.message, error.statusCode);
+  }
+
+  if (isMalformedJsonError(error)) {
+    return sendError(res, "Request body contains invalid JSON", 400);
   }
 
   if (error instanceof mongoose.Error.ValidationError) {
