@@ -6,6 +6,7 @@ import { Organization } from "../models/Organization";
 import { Project } from "../models/Project";
 import { Task } from "../models/Task";
 import { User } from "../models/User";
+import { deleteTask } from "../services/taskService";
 
 const seed = async () => {
   await connectToDatabase();
@@ -188,7 +189,14 @@ const seed = async () => {
     content: "This comment belongs to a deleted task.",
   });
 
-  await Task.deleteOne({ _id: deletedTask._id });
+  await deleteTask(
+    {
+      userId: String(owner._id),
+      organizationId: String(organization._id),
+      role: "owner",
+    },
+    String(deletedTask._id),
+  );
 
   await Booking.create([
     {
