@@ -1,0 +1,119 @@
+{
+  "info": {
+    "_postman_id": "4bc28d83-77bf-4fed-9a9d-babe77ac8d48",
+    "name": "WorkspaceHub Comments API Permissions",
+    "description": "Sequential permission checks for editing and deleting comments. Uses the seeded owner, admin, and member accounts. Each operation has a dedicated comment; the uniquely named member-forbidden target remains in the database after the run.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5001", "type": "string" },
+    { "key": "ownerToken", "value": "", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "memberToken", "value": "", "type": "string" },
+    { "key": "taskId", "value": "", "type": "string" },
+    { "key": "memberOwnEditCommentId", "value": "", "type": "string" },
+    { "key": "memberOwnDeleteCommentId", "value": "", "type": "string" },
+    { "key": "ownerEditCommentId", "value": "", "type": "string" },
+    { "key": "ownerDeleteCommentId", "value": "", "type": "string" },
+    { "key": "adminEditCommentId", "value": "", "type": "string" },
+    { "key": "adminDeleteCommentId", "value": "", "type": "string" },
+    { "key": "memberForbiddenCommentId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Owner login",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Owner login returns 200', function () { pm.response.to.have.status(200); });", "pm.collectionVariables.set('ownerToken', pm.response.json().data.token);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{ownerToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"owner@workspacehub.dev\",\n  \"password\": \"Password123!\"\n}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] } }
+    },
+    {
+      "name": "Admin login",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Admin login returns 200', function () { pm.response.to.have.status(200); });", "pm.collectionVariables.set('adminToken', pm.response.json().data.token);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@workspacehub.dev\",\n  \"password\": \"Password123!\"\n}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] } }
+    },
+    {
+      "name": "Member login",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Member login returns 200', function () { pm.response.to.have.status(200); });", "pm.collectionVariables.set('memberToken', pm.response.json().data.token);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"member@workspacehub.dev\",\n  \"password\": \"Password123!\"\n}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] } }
+    },
+    {
+      "name": "Get task list and save a task ID",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Task list returns 200', function () { pm.response.to.have.status(200); });", "const tasks = pm.response.json().data;", "pm.test('Task list contains a task', function () { pm.expect(tasks).to.be.an('array').that.is.not.empty; });", "if (tasks.length) pm.collectionVariables.set('taskId', tasks[0]._id);"] } }],
+      "request": { "method": "GET", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks", "host": ["{{baseUrl}}"], "path": ["api", "tasks"] } }
+    },
+    {
+      "name": "Create member comment for own-edit test",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Create member edit comment returns 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('memberOwnEditCommentId', pm.response.json().data._id);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Member own-edit permission test\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Member edits own comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Member can edit own comment (200)', function () { pm.response.to.have.status(200); });"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Member own-edit permission test - updated\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{memberOwnEditCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{memberOwnEditCommentId}}"] } }
+    },
+    {
+      "name": "Create member comment for own-delete test",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Create member delete comment returns 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('memberOwnDeleteCommentId', pm.response.json().data._id);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Member own-delete permission test\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Member deletes own comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Member can delete own comment (200)', function () { pm.response.to.have.status(200); });"] } }],
+      "request": { "method": "DELETE", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{memberOwnDeleteCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{memberOwnDeleteCommentId}}"] } }
+    },
+    {
+      "name": "Create member-authored comment for owner-edit test",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Create owner edit target returns 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('ownerEditCommentId', pm.response.json().data._id);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Owner edit permission test target\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Owner edits member comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Owner can edit another user comment (200)', function () { pm.response.to.have.status(200); });"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{ownerToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Owner edit permission test target - updated\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{ownerEditCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{ownerEditCommentId}}"] } }
+    },
+    {
+      "name": "Create member-authored comment for owner-delete test",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Create owner delete target returns 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('ownerDeleteCommentId', pm.response.json().data._id);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Owner delete permission test target\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Owner deletes member comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Owner can delete another user comment (200)', function () { pm.response.to.have.status(200); });"] } }],
+      "request": { "method": "DELETE", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{ownerToken}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{ownerDeleteCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{ownerDeleteCommentId}}"] } }
+    },
+    {
+      "name": "Create member-authored comment for admin-edit test",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Create admin edit target returns 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('adminEditCommentId', pm.response.json().data._id);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Admin edit permission test target\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Admin edits member comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Admin can edit another user comment (200)', function () { pm.response.to.have.status(200); });"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Admin edit permission test target - updated\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{adminEditCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{adminEditCommentId}}"] } }
+    },
+    {
+      "name": "Create member-authored comment for admin-delete test",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Create admin delete target returns 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('adminDeleteCommentId', pm.response.json().data._id);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Admin delete permission test target\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Admin deletes member comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Admin can delete another user comment (200)', function () { pm.response.to.have.status(200); });"] } }],
+      "request": { "method": "DELETE", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{adminDeleteCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{adminDeleteCommentId}}"] } }
+    },
+    {
+      "name": "Create owner-authored comment for member 403 tests",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Create member forbidden-test target returns 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('memberForbiddenCommentId', pm.response.json().data._id);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{ownerToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"POSTMAN_PERMISSION_403_TARGET_KEEP_AFTER_RUN\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Member cannot edit someone else's comment (403)",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Member editing another user comment is forbidden (403)', function () { pm.response.to.have.status(403); });"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"This edit must be forbidden\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{memberForbiddenCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{memberForbiddenCommentId}}"] } }
+    },
+    {
+      "name": "Member cannot delete someone else's comment (403)",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Member deleting another user comment is forbidden (403)', function () { pm.response.to.have.status(403); });"] } }],
+      "request": { "method": "DELETE", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{memberToken}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{memberForbiddenCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{memberForbiddenCommentId}}"] } }
+    }
+  ]
+}
