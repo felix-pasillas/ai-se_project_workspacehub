@@ -170,6 +170,26 @@ const seed = async () => {
   // Leaves a comment with no matching author to test the "Unknown user" fallback.
   await User.deleteOne({ _id: formerMember._id });
 
+  // Leaves a comment with no matching task to test for dangling references.
+  const deletedTask = await Task.create({
+    organizationId: organization._id,
+    projectId: projectOne._id,
+    title: "Archive old reports",
+    description: "This task is deleted during seeding.",
+    status: "todo",
+    priority: "low",
+    assignedTo: member._id,
+  });
+
+  await Comment.create({
+    organizationId: organization._id,
+    taskId: deletedTask._id,
+    authorId: member._id,
+    content: "This comment belongs to a deleted task.",
+  });
+
+  await Task.deleteOne({ _id: deletedTask._id });
+
   await Booking.create([
     {
       organizationId: organization._id,
