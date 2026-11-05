@@ -1,0 +1,174 @@
+{
+  "info": {
+    "_postman_id": "72d87280-c92c-493b-a1dd-358c9a15f2fb",
+    "name": "WorkspaceHub Comments API Edge Cases",
+    "description": "Sequential negative and boundary tests for the Comments API. Expected responses represent desirable API behavior; some are expected to fail against the current backend, as noted in the report. Runs with the seeded owner account.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5001", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "loggedInUserId", "value": "", "type": "string" },
+    { "key": "organizationId", "value": "", "type": "string" },
+    { "key": "taskId", "value": "", "type": "string" },
+    { "key": "baselineCommentId", "value": "", "type": "string" },
+    { "key": "extraFieldCommentId", "value": "", "type": "string" },
+    { "key": "fakeAuthorId", "value": "", "type": "string" },
+    { "key": "fakeOrganizationId", "value": "", "type": "string" },
+    { "key": "fakeTaskId", "value": "", "type": "string" },
+    { "key": "nonexistentTaskId", "value": "", "type": "string" },
+    { "key": "nonexistentCommentId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Login as seeded owner",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Seeded owner login succeeds (200)', function () { pm.response.to.have.status(200); });", "if (pm.response.code === 200) {", "  const data = pm.response.json().data;", "  pm.collectionVariables.set('token', data.token);", "  pm.collectionVariables.set('loggedInUserId', data.user._id);", "  pm.collectionVariables.set('organizationId', data.user.organizationId);", "}"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"owner@workspacehub.dev\",\"password\":\"Password123!\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] } }
+    },
+    {
+      "name": "Get task ID and generate nonexistent IDs",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Task list succeeds and contains a task (200)', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().data).to.be.an('array').that.is.not.empty; });", "const tasks = pm.response.json().data;", "if (tasks && tasks.length) pm.collectionVariables.set('taskId', tasks[0]._id);", "const randomObjectId = () => Array.from({ length: 24 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');", "pm.collectionVariables.set('nonexistentTaskId', randomObjectId());", "pm.collectionVariables.set('nonexistentCommentId', randomObjectId());", "pm.collectionVariables.set('fakeAuthorId', randomObjectId());", "pm.collectionVariables.set('fakeOrganizationId', randomObjectId());", "pm.collectionVariables.set('fakeTaskId', randomObjectId());"] } }],
+      "request": { "method": "GET", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks", "host": ["{{baseUrl}}"], "path": ["api", "tasks"] } }
+    },
+    {
+      "name": "Create a valid baseline comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Valid comment creation succeeds (201)', function () { pm.response.to.have.status(201); });", "if (pm.response.code === 201) pm.collectionVariables.set('baselineCommentId', pm.response.json().data._id);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"POSTMAN_EDGE_BASELINE_COMMENT_KEEP_UNTIL_FINAL_DELETE\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Get the created comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Existing comment is returned (200)', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().data.content).to.eql('POSTMAN_EDGE_BASELINE_COMMENT_KEEP_UNTIL_FINAL_DELETE'); });"] } }],
+      "request": { "method": "GET", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{baselineCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{baselineCommentId}}"] } }
+    },
+    {
+      "name": "Update baseline comment with trimmed content",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Valid comment update succeeds and trims content (200)', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().data.content).to.eql('Updated edge-case baseline'); });"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"  Updated edge-case baseline  \"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{baselineCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{baselineCommentId}}"] } }
+    },
+    {
+      "name": "Reject missing content on create",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Missing content is rejected (400)', function () { pm.response.to.have.status(400); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject null content on create",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Null content is rejected (400)', function () { pm.response.to.have.status(400); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":null}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject numeric content on create",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Non-string content is rejected (400)', function () { pm.response.to.have.status(400); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":123}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject whitespace-only content on create",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Whitespace-only content is rejected (400)', function () { pm.response.to.have.status(400); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"   \\t \\n\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject object content on create",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Object content is rejected (400)', function () { pm.response.to.have.status(400); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":{\"text\":\"unexpected\"}}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject array content on create",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Array content is rejected (400)', function () { pm.response.to.have.status(400); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":[\"unexpected\"]}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Ignore extra fields on create",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Extra create fields are ignored and scoped values come from auth and URL (201)', function () {", "  pm.response.to.have.status(201);", "  const comment = pm.response.json().data;", "  pm.expect(comment.authorId).to.eql(pm.collectionVariables.get('loggedInUserId'));", "  pm.expect(comment.organizationId).to.eql(pm.collectionVariables.get('organizationId'));", "  pm.expect(comment.taskId).to.eql(pm.collectionVariables.get('taskId'));", "});", "if (pm.response.code === 201) pm.collectionVariables.set('extraFieldCommentId', pm.response.json().data._id);"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"POSTMAN_EDGE_EXTRA_FIELDS_CREATE\",\"authorId\":\"{{fakeAuthorId}}\",\"organizationId\":\"{{fakeOrganizationId}}\",\"taskId\":\"{{fakeTaskId}}\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject missing content on update",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Missing update content is rejected (400)', function () { pm.response.to.have.status(400); });"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{baselineCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{baselineCommentId}}"] } }
+    },
+    {
+      "name": "Reject null content on update",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Null update content is rejected (400)', function () { pm.response.to.have.status(400); });"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":null}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{baselineCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{baselineCommentId}}"] } }
+    },
+    {
+      "name": "Ignore extra fields on update",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Extra update fields are ignored while content updates and author remains authenticated user (200)', function () {", "  pm.response.to.have.status(200);", "  const comment = pm.response.json().data;", "  pm.expect(comment.content).to.eql('Valid update text');", "  pm.expect(comment.authorId).to.eql(pm.collectionVariables.get('loggedInUserId'));", "});"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Valid update text\",\"authorId\":\"{{fakeAuthorId}}\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{baselineCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{baselineCommentId}}"] } }
+    },
+    {
+      "name": "Reject malformed comment ID on GET",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Malformed comment ID returns not found (404)', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "GET", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/not-an-object-id", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "not-an-object-id"] } }
+    },
+    {
+      "name": "Reject malformed comment ID on PATCH",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Malformed comment ID returns not found (404)', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Not applied\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/not-an-object-id", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "not-an-object-id"] } }
+    },
+    {
+      "name": "Reject malformed comment ID on DELETE",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Malformed comment ID returns not found (404)', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "DELETE", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/not-an-object-id", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "not-an-object-id"] } }
+    },
+    {
+      "name": "Return 404 for nonexistent comment on GET",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Well-formed nonexistent comment ID returns 404', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "GET", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{nonexistentCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{nonexistentCommentId}}"] } }
+    },
+    {
+      "name": "Return 404 for nonexistent comment on PATCH",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Well-formed nonexistent comment ID returns 404', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "PATCH", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Not applied\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{nonexistentCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{nonexistentCommentId}}"] } }
+    },
+    {
+      "name": "Return 404 for nonexistent comment on DELETE",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Well-formed nonexistent comment ID returns 404', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "DELETE", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{nonexistentCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{nonexistentCommentId}}"] } }
+    },
+    {
+      "name": "Return 404 for malformed parent task ID when listing comments",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Malformed parent task ID returns 404', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "GET", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/not-an-object-id/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "not-an-object-id", "comments"] } }
+    },
+    {
+      "name": "Return 404 for nonexistent parent task when listing comments",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Well-formed nonexistent parent task ID returns 404', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "GET", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{nonexistentTaskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{nonexistentTaskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject comment creation under nonexistent parent task",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Comment creation under nonexistent task returns 404', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Should not be created\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{nonexistentTaskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{nonexistentTaskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject comment creation under malformed parent task ID",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Malformed parent task ID returns 404', function () { pm.response.to.have.status(404); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Should not be created\"}", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/not-an-object-id/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "not-an-object-id", "comments"] } }
+    },
+    {
+      "name": "Reject request without authentication",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Unauthenticated comment request returns 401', function () { pm.response.to.have.status(401); });"] } }],
+      "request": { "method": "GET", "auth": { "type": "noauth" }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject malformed JSON body",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Malformed JSON is reported as a client error (400)', function () { pm.response.to.have.status(400); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":", "options": { "raw": { "language": "json" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Reject unsupported content type without creating a comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Unsupported content type is rejected as a client error (400 or 415)', function () { pm.expect([400, 415]).to.include(pm.response.code); });"] } }],
+      "request": { "method": "POST", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "header": [{ "key": "Content-Type", "value": "text/plain" }], "body": { "mode": "raw", "raw": "content=not-json", "options": { "raw": { "language": "text" } } }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments"] } }
+    },
+    {
+      "name": "Clean up extra-field comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Extra-field comment cleanup succeeds (200)', function () { pm.response.to.have.status(200); });"] } }],
+      "request": { "method": "DELETE", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{extraFieldCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{extraFieldCommentId}}"] } }
+    },
+    {
+      "name": "Delete baseline comment",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Baseline comment cleanup succeeds (200)', function () { pm.response.to.have.status(200); });"] } }],
+      "request": { "method": "DELETE", "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "url": { "raw": "{{baseUrl}}/api/tasks/{{taskId}}/comments/{{baselineCommentId}}", "host": ["{{baseUrl}}"], "path": ["api", "tasks", "{{taskId}}", "comments", "{{baselineCommentId}}"] } }
+    }
+  ]
+}
