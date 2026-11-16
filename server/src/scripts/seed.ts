@@ -1,16 +1,19 @@
 import bcrypt from "bcryptjs";
 import { connectToDatabase } from "../config/database";
 import { Booking } from "../models/Booking";
+import { Comment } from "../models/Comment";
 import { Organization } from "../models/Organization";
 import { Project } from "../models/Project";
 import { Task } from "../models/Task";
 import { User } from "../models/User";
+import { deleteTask } from "../services/taskService";
 
 const seed = async () => {
   await connectToDatabase();
 
   await Promise.all([
     Booking.deleteMany({}),
+    Comment.deleteMany({}),
     Task.deleteMany({}),
     Project.deleteMany({}),
     User.deleteMany({}),
@@ -29,7 +32,7 @@ const seed = async () => {
 
   const passwordHash = await bcrypt.hash("Password123!", 10);
 
-  const [owner, admin, member] = await User.create([
+  const [owner, admin, member, formerMember] = await User.create([
     {
       firstName: "Olivia",
       lastName: "Owner",
@@ -54,6 +57,14 @@ const seed = async () => {
       organizationId: organization._id,
       role: "member",
     },
+    {
+      firstName: "Riley",
+      lastName: "Former",
+      email: "former@workspacehub.dev",
+      passwordHash,
+      organizationId: organization._id,
+      role: "member",
+    },
   ]);
 
   const [projectOne, projectTwo] = await Project.create([
@@ -72,7 +83,7 @@ const seed = async () => {
     },
   ]);
 
-  await Task.create([
+  const tasks = await Task.create([
     {
       organizationId: organization._id,
       projectId: projectOne._id,
@@ -82,6 +93,7 @@ const seed = async () => {
       priority: "medium",
       assignedTo: member._id,
       dueDate: new Date("2026-04-08T17:00:00.000Z"),
+      createdAt: new Date("2026-03-05T12:00:00.000Z"),
     },
     {
       organizationId: organization._id,
@@ -92,6 +104,7 @@ const seed = async () => {
       priority: "high",
       assignedTo: admin._id,
       dueDate: new Date("2026-04-10T16:00:00.000Z"),
+      createdAt: new Date("2026-03-04T12:00:00.000Z"),
     },
     {
       organizationId: organization._id,
@@ -102,6 +115,7 @@ const seed = async () => {
       priority: "high",
       assignedTo: owner._id,
       dueDate: new Date("2026-04-12T18:00:00.000Z"),
+      createdAt: new Date("2026-03-03T12:00:00.000Z"),
     },
     {
       organizationId: organization._id,
@@ -112,6 +126,7 @@ const seed = async () => {
       priority: "low",
       assignedTo: member._id,
       dueDate: new Date("2026-04-04T15:00:00.000Z"),
+      createdAt: new Date("2026-03-02T12:00:00.000Z"),
     },
     {
       organizationId: organization._id,
@@ -122,8 +137,66 @@ const seed = async () => {
       priority: "medium",
       assignedTo: owner._id,
       dueDate: new Date("2026-04-15T19:00:00.000Z"),
+      createdAt: new Date("2026-03-01T12:00:00.000Z"),
     },
   ]);
+
+  await Comment.create([
+    {
+      organizationId: organization._id,
+      taskId: tasks[0]._id,
+      authorId: member._id,
+      content: "I found two stale routes in the settings menu.",
+    },
+    {
+      organizationId: organization._id,
+      taskId: tasks[0]._id,
+      authorId: owner._id,
+      content: "Thanks, please add both to the audit document.",
+    },
+    {
+      organizationId: organization._id,
+      taskId: tasks[0]._id,
+      authorId: admin._id,
+      content: "I can review the updated navigation map tomorrow.",
+    },
+    {
+      organizationId: organization._id,
+      taskId: tasks[0]._id,
+      authorId: formerMember._id,
+      content: "I left my navigation notes in the project folder.",
+    },
+  ]);
+
+  // Leaves a comment with no matching author to test the "Unknown user" fallback.
+  await User.deleteOne({ _id: formerMember._id });
+
+  // Leaves a comment with no matching task to test for dangling references.
+  const deletedTask = await Task.create({
+    organizationId: organization._id,
+    projectId: projectOne._id,
+    title: "Archive old reports",
+    description: "This task is deleted during seeding.",
+    status: "todo",
+    priority: "low",
+    assignedTo: member._id,
+  });
+
+  await Comment.create({
+    organizationId: organization._id,
+    taskId: deletedTask._id,
+    authorId: member._id,
+    content: "This comment belongs to a deleted task.",
+  });
+
+  await deleteTask(
+    {
+      userId: String(owner._id),
+      organizationId: String(organization._id),
+      role: "owner",
+    },
+    String(deletedTask._id),
+  );
 
   await Booking.create([
     {
